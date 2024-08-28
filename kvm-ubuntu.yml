@@ -1,0 +1,62 @@
+---
+- name: "Installs KVM packages Ubuntu 20.04 & 22.04"
+  hosts: localhost
+  connection: local
+  remote_user: root
+  gather_facts: yes
+
+  vars_prompt:
+    - name: username
+      prompt: "Please provide a user account" 
+      private: no
+
+  tasks: 
+    - name: "Updating the package cache"  
+      apt: 
+        update_cache: yes
+        upgrade: 'yes' 
+      when: ansible_facts['distribution'] == "Ubuntu"
+      ignore_errors: True
+
+    - name: "Installing KVM packages" 
+      apt: 
+        state: present
+        pkg: 
+          - libosinfo-bin
+          - libvirt-clients
+          - libvirt-daemon-system
+          - qemu-efi
+          - qemu-guest-agent
+          - qemu-kvm
+          - qemu
+          - spice-vdagent
+          - virt-manager
+          - bridge-utils
+      when: ansible_facts['distribution'] == "Ubuntu"
+
+    - name: "Validating username" 
+      shell: getent group "{{ username }}"
+      register: group_chk
+
+    - name: "Adding user account to the kvm & libvirt groups" 
+      user: 
+        name: "{{ username }}"
+        groups: kvm,libvirt
+        append: yes
+      when: group_chk.rc == 0
+
+    - name: "Adjust Apparmor settings"
+      file:
+        src: /etc/apparmor.d/usr.sbin.libvirtd 
+        dest:  /etc/apparmor.d/disable/usr.sbin.libvirtd
+        state: link
+
+    - name: "System Reboot" 
+      command: /usr/sbin/shutdown -r +1
+      ignore_errors: True
+
+    - shell: /usr/bin/date -d '+1 minute'
+      register: rdate
+       
+    - debug:
+        msg: "System will reboot @ {{ rdate.stdout }}"
