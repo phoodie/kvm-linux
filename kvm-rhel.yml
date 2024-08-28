@@ -1,0 +1,57 @@
+---
+- name: "Installs KVM packages CentOS 8 Stream"
+  hosts: localhost
+  connection: local
+  remote_user: root
+  gather_facts: yes
+
+  vars_prompt:
+    - name: username
+      prompt: "Please provide a user account" 
+      private: no
+
+  tasks: 
+    - name: "Installing KVM packages" 
+      dnf: 
+        state: present
+        name: 
+          - qemu-guest-agent
+          - qemu-kvm
+          - spice-vdagent
+          - virt-manager
+          - virt-top
+          - virt-install
+          - virt-viewer
+          - bridge-utils
+          - edk2-ovmf
+          - libguestfs-tools
+          - libvirt-devel
+          - openssh-askpass
+      when: ansible_facts['os_family'] == "RedHat"
+
+    - name: "Validating username" 
+      shell: getent group "{{ username }}"
+      register: group_chk
+
+    - name: "Adding user account to the kvm & libvirt groups" 
+      user: 
+        name: "{{ username }}"
+        groups: kvm,libvirt
+        append: yes
+      when: group_chk.rc == 0
+
+    - name: "Enabling KVM service" 
+      systemd: 
+        name: libvirtd
+        state: started
+        enabled: yes
+
+    - name: "System Reboot" 
+      command: /usr/sbin/shutdown -r +1
+      ignore_errors: True
+
+    - shell: /usr/bin/date -d '+1 minute'
+      register: rdate
+       
+    - debug:
+        msg: "System will reboot @ {{ rdate.stdout }}"
