@@ -15,7 +15,7 @@
       apt: 
         update_cache: yes
         upgrade: 'yes' 
-      when: ansible_facts['distribution'] == "Ubuntu"
+      when: ansible_facts['distribution'] == "Ubuntu" ansible_facts['distribution'] == "Kali"
       ignore_errors: True
 
     - name: "Installing KVM packages" 
@@ -32,7 +32,7 @@
           - spice-vdagent
           - virt-manager
           - bridge-utils
-      when: ansible_facts['distribution'] == "Ubuntu"
+      when: ansible_facts['distribution'] == "Ubuntu" or ansible_facts['distribution'] == "Ubuntu"
 
     - name: "Validating username" 
       shell: getent group "{{ username }}"
